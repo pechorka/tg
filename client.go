@@ -11,33 +11,41 @@ const api = `https://api.telegram.org`
 
 // Client for telegram bot
 type Client struct {
-	token string
+	token    string
+	parseMod ParseMod
 }
 
-func NewClient(token string) *Client {
-	return &Client{
+// Options is options for tg client
+type Options struct {
+	// ParseMod which parse mod to use. Optional
+	ParseMod ParseMod
+}
+
+// NewClient create new tg client
+func NewClient(token string, opts *Options) *Client {
+	c := Client{
 		token: token,
 	}
+	if opts != nil {
+		c.parseMod = opts.ParseMod
+	}
+	return &c
 }
 
 // SendMsg send message in chat
 func (c *Client) SendMsg(chatID int64, text string) error {
-	type req struct {
-		ChatID int64  `json:"chat_id"`
-		Text   string `json:"text"`
+	req := map[string]interface{}{
+		"chat_id":    chatID,
+		"text":       text,
+		"parse_mode": c.parseMod,
 	}
 
-	reqBody := req{
-		ChatID: chatID,
-		Text:   text,
-	}
-
-	reqBytes, err := json.Marshal(reqBody)
+	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return err
 	}
 
-	res, err := http.Post("https://api.telegram.org/bot"+c.token+"/sendMessage", "application/json", bytes.NewBuffer(reqBytes))
+	res, err := http.Post("https://api.telegram.org/bot"+c.token+"/sendMessage", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return err
 	}
